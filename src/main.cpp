@@ -36,7 +36,7 @@ bool locate(const std::string &program, std::string &output)
 	const char *$path = getenv("PATH");
 	if (!$path)
 		return (false);
-	
+
 	std::vector<std::string> paths = split(std::string($path), ":");
 
 	for (std::vector<std::string>::iterator iterator = paths.begin(); iterator != paths.end(); ++iterator)
@@ -55,15 +55,15 @@ bool locate(const std::string &program, std::string &output)
 	return (false);
 }
 
-using builtin_map = std::map<std::string, std::function<void(const std::vector<std::string>&)>>;
+using builtin_map = std::map<std::string, std::function<void(const std::vector<std::string> &)>>;
 builtin_map builtins;
 
-void builtin_exit(const std::vector<std::string>& _)
+void builtin_exit(const std::vector<std::string> &_)
 {
 	exit(0);
 }
 
-void builtin_echo(const std::vector<std::string>& arguments)
+void builtin_echo(const std::vector<std::string> &arguments)
 {
 	size_t size = arguments.size();
 	size_t last_index = size - 1;
@@ -79,7 +79,7 @@ void builtin_echo(const std::vector<std::string>& arguments)
 	std::cout << std::endl;
 }
 
-void builtin_type(const std::vector<std::string>& arguments)
+void builtin_type(const std::vector<std::string> &arguments)
 {
 	std::string program = arguments[1];
 
@@ -100,7 +100,7 @@ void builtin_type(const std::vector<std::string>& arguments)
 	std::cout << program << ": not found" << std::endl;
 }
 
-void builtin_pwd(const std::vector<std::string>& _)
+void builtin_pwd(const std::vector<std::string> &_)
 {
 	char path[PATH_MAX] = {};
 	getcwd(path, sizeof(path));
@@ -108,7 +108,7 @@ void builtin_pwd(const std::vector<std::string>& _)
 	std::cout << path << std::endl;
 }
 
-void builtin_cd(const std::vector<std::string>& arguments)
+void builtin_cd(const std::vector<std::string> &arguments)
 {
 	std::string absolute_path;
 
@@ -126,11 +126,11 @@ void builtin_cd(const std::vector<std::string>& arguments)
 	{
 		const char *$home = getenv("HOME");
 		if (!$home)
-			std::cerr << "cd: $HOME is not set\n" << std::endl;
+			std::cerr << "cd: $HOME is not set" << std::endl;
 		else
 			absolute_path = std::string($home) + "/" + path.substr(1 /* ~ */);
 	}
-	
+
 	if (absolute_path.empty())
 		return;
 
@@ -163,7 +163,7 @@ void eval(std::string &line)
 		builtin->second(arguments);
 		return;
 	}
-	
+
 	std::string path;
 	if (locate(program, path))
 	{
@@ -192,7 +192,7 @@ void exec(const std::string &path, const std::vector<std::string> &arguments)
 		argv[size] = NULL;
 
 		for (size_t index = 0; index < size; ++index)
-			argv[index] = const_cast<char*>(arguments[index].c_str());
+			argv[index] = const_cast<char *>(arguments[index].c_str());
 
 		execvp(path.c_str(), argv);
 		perror("execvp");
