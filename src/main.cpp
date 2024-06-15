@@ -1,13 +1,28 @@
 #include <iostream>
+#include <string>
 
-int main() {
-  std::cout << std::unitbuf;
-  std::cerr << std::unitbuf;
+bool read(std::string &input)
+{
+	while (true)
+	{
+		std::cout << "$ ";
 
-  std::cout << "$ ";
-  
-  std::string input;
-  std::getline(std::cin, input);
+		if (!std::getline(std::cin, input))
+			return (false);
 
-  std::cout << input << ": command not found" << std::endl;
+		if (!input.empty())
+			return (true);
+	}
+}
+
+int main()
+{
+	std::cout << std::unitbuf;
+	std::cerr << std::unitbuf;
+
+	std::string input;
+	while (read(input))
+	{
+		std::cout << input << ": command not found" << std::endl;
+	}
 }
