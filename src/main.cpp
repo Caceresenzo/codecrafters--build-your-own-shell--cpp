@@ -122,6 +122,14 @@ void builtin_cd(const std::vector<std::string>& arguments)
 
 		absolute_path = std::string(current_path) + "/" + path;
 	}
+	else if (path[0] == '~')
+	{
+		const char *$home = getenv("HOME");
+		if (!$home)
+			std::cerr << "cd: $HOME is not set\n" << std::endl;
+		else
+			absolute_path = std::string($home) + "/" + path.substr(1 /* ~ */);
+	}
 	
 	if (absolute_path.empty())
 		return;
