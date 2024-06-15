@@ -115,6 +115,13 @@ void builtin_cd(const std::vector<std::string>& arguments)
 	const std::string &path = arguments[1];
 	if (path[0] == '/')
 		absolute_path = path;
+	else if (path[0] == '.')
+	{
+		char current_path[PATH_MAX] = {};
+		getcwd(current_path, sizeof(current_path));
+
+		absolute_path = std::string(current_path) + "/" + path;
+	}
 	
 	if (absolute_path.empty())
 		return;
