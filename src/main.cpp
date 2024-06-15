@@ -4,6 +4,11 @@
 #include <vector>
 #include <functional>
 #include <unistd.h>
+#include <sys/wait.h>
+
+bool read(std::string &input);
+void eval(std::string &line);
+void exec(const std::string &path, const std::vector<std::string> &arguments);
 
 std::vector<std::string> split(std::string haystack, const std::string &needle)
 {
@@ -119,8 +124,43 @@ void eval(std::string &line)
 		builtin->second(arguments);
 		return;
 	}
+	
+	std::string path;
+	if (locate(program, path))
+	{
+		exec(path, arguments);
+		return;
+	}
 
 	std::cout << program << ": command not found" << std::endl;
+}
+
+void exec(const std::string &path, const std::vector<std::string> &arguments)
+{
+	pid_t pid = fork();
+
+	if (pid == -1)
+	{
+		perror("fork");
+		return;
+	}
+
+	if (pid == 0)
+	{
+		size_t size = arguments.size();
+
+		char *argv[size + 1];
+		argv[size] = NULL;
+
+		for (size_t index = 0; index < size; ++index)
+			argv[index] = const_cast<char*>(arguments[index].c_str());
+
+		execvp(path.c_str(), argv);
+		perror("execvp");
+		exit(1);
+	}
+	else
+		waitpid(pid, NULL, 0);
 }
 
 int main()
