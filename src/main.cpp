@@ -108,6 +108,21 @@ void builtin_pwd(const std::vector<std::string>& _)
 	std::cout << path << std::endl;
 }
 
+void builtin_cd(const std::vector<std::string>& arguments)
+{
+	std::string absolute_path;
+
+	const std::string &path = arguments[1];
+	if (path[0] == '/')
+		absolute_path = path;
+	
+	if (absolute_path.empty())
+		return;
+
+	if (chdir(absolute_path.c_str()) == -1)
+		std::cout << "cd: " << path << ": No such file or directory" << std::endl;
+}
+
 bool read(std::string &input)
 {
 	while (true)
@@ -181,6 +196,7 @@ int main()
 	builtins.insert(std::make_pair("echo", builtin_echo));
 	builtins.insert(std::make_pair("type", builtin_type));
 	builtins.insert(std::make_pair("pwd", builtin_pwd));
+	builtins.insert(std::make_pair("cd", builtin_cd));
 
 	std::string input;
 	while (read(input))
