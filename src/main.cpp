@@ -61,12 +61,29 @@ void builtin_exit(const std::vector<std::string>& _)
 	exit(0);
 }
 
+void builtin_echo(const std::vector<std::string>& arguments)
+{
+	size_t size = arguments.size();
+	size_t last_index = size - 1;
+
+	for (size_t index = 1; index < size; ++index)
+	{
+		std::cout << arguments[index];
+
+		if (last_index != index)
+			std::cout << " ";
+	}
+
+	std::cout << std::endl;
+}
+
 int main()
 {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 
 	builtins.insert(std::make_pair("exit", builtin_exit));
+	builtins.insert(std::make_pair("echo", builtin_echo));
 
 	std::string input;
 	while (read(input))
