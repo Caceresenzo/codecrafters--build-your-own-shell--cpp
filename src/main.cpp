@@ -5,6 +5,7 @@
 #include <functional>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <climits>
 
 bool read(std::string &input);
 void eval(std::string &line);
@@ -99,6 +100,14 @@ void builtin_type(const std::vector<std::string>& arguments)
 	std::cout << program << ": not found" << std::endl;
 }
 
+void builtin_pwd(const std::vector<std::string>& _)
+{
+	char path[PATH_MAX] = {};
+	getcwd(path, sizeof(path));
+
+	std::cout << path << std::endl;
+}
+
 bool read(std::string &input)
 {
 	while (true)
@@ -171,6 +180,7 @@ int main()
 	builtins.insert(std::make_pair("exit", builtin_exit));
 	builtins.insert(std::make_pair("echo", builtin_echo));
 	builtins.insert(std::make_pair("type", builtin_type));
+	builtins.insert(std::make_pair("pwd", builtin_pwd));
 
 	std::string input;
 	while (read(input))
