@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <functional>
+#include <unistd.h>
 
 std::vector<std::string> split(std::string haystack, const std::string &needle)
 {
@@ -16,12 +17,36 @@ std::vector<std::string> split(std::string haystack, const std::string &needle)
 		result.push_back(argument);
 
 		if (index != std::string::npos)
-			++index; /* space */
+			index += needle.size();
 
 		haystack.erase(0, index);
 	}
 
 	return result;
+}
+
+bool locate(const std::string &program, std::string &output)
+{
+	const char *$path = getenv("PATH");
+	if (!$path)
+		return (false);
+	
+	std::vector<std::string> paths = split(std::string($path), ":");
+
+	for (std::vector<std::string>::iterator iterator = paths.begin(); iterator != paths.end(); ++iterator)
+	{
+		std::string path = *iterator + "/" + program;
+
+		// std::cout << "?> " << path << std::endl;
+
+		if (access(path.c_str(), F_OK | X_OK) == 0)
+		{
+			output = path;
+			return (true);
+		}
+	}
+
+	return (false);
 }
 
 using builtin_map = std::map<std::string, std::function<void(const std::vector<std::string>&)>>;
@@ -56,6 +81,13 @@ void builtin_type(const std::vector<std::string>& arguments)
 	if (builtin != builtins.end())
 	{
 		std::cout << program << " is a shell builtin" << std::endl;
+		return;
+	}
+
+	std::string path;
+	if (locate(program, path))
+	{
+		std::cout << program << " is " << path << std::endl;
 		return;
 	}
 
