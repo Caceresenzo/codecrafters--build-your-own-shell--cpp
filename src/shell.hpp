@@ -32,6 +32,7 @@ public:
 
 private:
     void backslash(bool in_quote);
+    char map_backslash_character(char character);
     char next(void);
 };
 

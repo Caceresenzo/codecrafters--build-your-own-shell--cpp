@@ -83,9 +83,24 @@ void LineParser::backslash(bool in_quote)
         return;
 
     if (in_quote)
-        builder += BACKSLASH;
+    {
+        char mapped = map_backslash_character(character);
+
+        if (mapped != END)
+            character = mapped;
+        else
+            builder += BACKSLASH;
+    }
 
     builder += character;
+}
+
+char LineParser::map_backslash_character(char character)
+{
+    if (character == BACKSLASH || character == DOUBLE)
+        return (character);
+
+    return (END);
 }
 
 char LineParser::next(void)
