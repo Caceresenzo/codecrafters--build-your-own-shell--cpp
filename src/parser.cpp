@@ -4,6 +4,7 @@
 #define SPACE ' '
 #define SINGLE '\''
 #define DOUBLE '"'
+#define BACKSLASH '\\'
 
 LineParser::LineParser(const std::string &line)
     : iterator(std::prev(line.begin())),
@@ -33,6 +34,13 @@ std::vector<std::string> LineParser::parse(void)
             break;
         }
 
+        case BACKSLASH:
+        {
+            backslash(false);
+
+            break;
+        }
+
         case SINGLE:
         {
             while ((character = next()) != END && character != SINGLE)
@@ -44,7 +52,12 @@ std::vector<std::string> LineParser::parse(void)
         case DOUBLE:
         {
             while ((character = next()) != END && character != DOUBLE)
-                builder.push_back(character);
+            {
+                if (character == BACKSLASH)
+                    backslash(true);
+                else
+                    builder.push_back(character);
+            }
 
             break;
         }
@@ -61,6 +74,18 @@ std::vector<std::string> LineParser::parse(void)
         strings.push_back(builder);
 
     return (strings);
+}
+
+void LineParser::backslash(bool in_quote)
+{
+    char character = next();
+    if (character == END)
+        return;
+
+    if (in_quote)
+        builder += BACKSLASH;
+
+    builder += character;
 }
 
 char LineParser::next(void)

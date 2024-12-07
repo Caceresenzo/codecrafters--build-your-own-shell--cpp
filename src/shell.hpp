@@ -31,6 +31,7 @@ public:
     std::vector<std::string> parse(void);
 
 private:
+    void backslash(bool in_quote);
     char next(void);
 };
 
