@@ -33,7 +33,7 @@ void exec(const std::string &path, const std::vector<std::string> &arguments)
 
 void eval(std::string &line)
 {
-	std::vector<std::string> arguments = split(line, " ");
+	std::vector<std::string> arguments = LineParser(line).parse();
 	std::string program = arguments[0];
 
 	builtins::registry_map::iterator builtin = builtins::REGISTRY.find(program);

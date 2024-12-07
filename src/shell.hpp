@@ -17,4 +17,21 @@ namespace builtins
     void register_defaults();
 }
 
+class LineParser
+{
+private:
+    std::string::const_iterator iterator;
+    std::string::const_iterator end;
+    std::string builder;
+
+public:
+    LineParser(const std::string &line);
+
+public:
+    std::vector<std::string> parse(void);
+
+private:
+    char next(void);
+};
+
 #endif
