@@ -3,6 +3,7 @@
 #define END '\0'
 #define SPACE ' '
 #define SINGLE '\''
+#define DOUBLE '"'
 
 LineParser::LineParser(const std::string &line)
     : iterator(std::prev(line.begin())),
@@ -35,6 +36,14 @@ std::vector<std::string> LineParser::parse(void)
         case SINGLE:
         {
             while ((character = next()) != END && character != SINGLE)
+                builder.push_back(character);
+
+            break;
+        }
+
+        case DOUBLE:
+        {
+            while ((character = next()) != END && character != DOUBLE)
                 builder.push_back(character);
 
             break;
