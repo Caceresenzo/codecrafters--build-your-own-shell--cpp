@@ -34,7 +34,7 @@ std::vector<std::string> LineParser::parse(void)
 
         case SINGLE:
         {
-            while ((character = next()) != END)
+            while ((character = next()) != END && character != SINGLE)
                 builder.push_back(character);
 
             break;
