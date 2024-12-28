@@ -2,10 +2,24 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <cstring>
 #include <climits>
+#include <unistd.h>
+#include <fcntl.h>
 
 bool locate(const std::string &program, std::string &output)
 {
+	if (program.starts_with('/'))
+	{
+		if (access(program.c_str(), F_OK | X_OK) == 0)
+		{
+			output = program;
+			return (true);
+		}
+
+		return (false);
+	}
+
 	const char *$path = getenv("PATH");
 	if (!$path)
 		return (false);
@@ -26,61 +40,126 @@ bool locate(const std::string &program, std::string &output)
 	return (false);
 }
 
+RedirectedStreams::RedirectedStreams(const std::vector<Redirect> &redirects)
+{
+	std::optional<int> output;
+	std::optional<int> error;
+
+	for (auto redirect : redirects)
+	{
+		int flags = O_CREAT | O_WRONLY;
+		if (redirect.append)
+			flags |= O_APPEND;
+		else
+			flags |= O_TRUNC;
+
+		int fd = open(redirect.path.c_str(), flags, 0644);
+		if (fd == -1)
+		{
+			const char *error = strerror(errno);
+			std::cerr << "shell: " << redirect.path << ": " << error;
+			_valid = false;
+			break;
+		}
+
+		if (StandardNamedStream::OUTPUT == redirect.stream_name)
+		{
+			if (output.has_value())
+				::close(output.value());
+
+			output = fd;
+		}
+		else if (StandardNamedStream::ERROR == redirect.stream_name)
+		{
+			if (error.has_value())
+				::close(error.value());
+
+			error = fd;
+		}
+		else
+			::close(fd);
+	}
+
+	_output = output;
+	_error = error;
+	_valid = true;
+}
+
+RedirectedStreams::~RedirectedStreams()
+{
+	close();
+}
+
+void RedirectedStreams::close()
+{
+	if (_output.has_value())
+	{
+		::close(_output.value());
+		_output.reset();
+	}
+
+	if (_error.has_value())
+	{
+		::close(_error.value());
+		_error.reset();
+	}
+}
+
 namespace builtins
 {
 	registry_map REGISTRY;
 
-	void exit(const std::vector<std::string> &_)
+	void exit(const std::vector<std::string> &_, const RedirectedStreams &__)
 	{
 		std::exit(0);
 	}
 
-	void echo(const std::vector<std::string> &arguments)
+	void echo(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		size_t size = arguments.size();
 		size_t last_index = size - 1;
 
 		for (size_t index = 1; index < size; ++index)
 		{
-			std::cout << arguments[index];
+			dprintf(streams.output(), "%s", arguments[index].c_str());
 
 			if (last_index != index)
-				std::cout << " ";
+				dprintf(streams.output(), " ");
 		}
 
-		std::cout << std::endl;
+		dprintf(streams.output(), "\n");
 	}
 
-	void type(const std::vector<std::string> &arguments)
+	void type(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		std::string program = arguments[1];
 
 		builtins::registry_map::iterator builtin = builtins::REGISTRY.find(program);
 		if (builtin != builtins::REGISTRY.end())
 		{
-			std::cout << program << " is a shell builtin" << std::endl;
+			dprintf(streams.output(), "%s is a shell builtin\n", program.c_str());
 			return;
 		}
 
 		std::string path;
 		if (locate(program, path))
 		{
-			std::cout << program << " is " << path << std::endl;
+			dprintf(streams.output(), "%s is %s\n", program.c_str(), path.c_str());
 			return;
 		}
 
-		std::cout << program << ": not found" << std::endl;
+		dprintf(streams.error(), "%s: not found\n", program.c_str());
 	}
 
-	void pwd(const std::vector<std::string> &_)
+	void pwd(const std::vector<std::string> &_, const RedirectedStreams &streams)
 	{
 		char path[PATH_MAX] = {};
 		getcwd(path, sizeof(path));
 
-		std::cout << path << std::endl;
+		dprintf(streams.output(), "%s\n", path);
 	}
 
-	void cd(const std::vector<std::string> &arguments)
+	void cd(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		std::string absolute_path;
 
@@ -98,7 +177,7 @@ namespace builtins
 		{
 			const char *$home = getenv("HOME");
 			if (!$home)
-				std::cerr << "cd: $HOME is not set" << std::endl;
+				dprintf(streams.error(), "cd: $HOME is not set\n");
 			else
 				absolute_path = std::string($home) + "/" + path.substr(1 /* ~ */);
 		}
@@ -107,7 +186,7 @@ namespace builtins
 			return;
 
 		if (chdir(absolute_path.c_str()) == -1)
-			std::cout << "cd: " << path << ": No such file or directory" << std::endl;
+			dprintf(streams.output(), "cd: %s: %s\n", path.c_str(), strerror(errno));
 	}
 
 	void register_defaults()

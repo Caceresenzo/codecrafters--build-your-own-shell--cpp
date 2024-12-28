@@ -2,8 +2,9 @@
 
 #include <iostream>
 #include <sys/wait.h>
+#include <unistd.h>
 
-void exec(const std::string &path, const std::vector<std::string> &arguments)
+void exec(const std::string &path, const std::vector<std::string> &arguments, RedirectedStreams &streams)
 {
 	pid_t pid = fork();
 
@@ -22,6 +23,11 @@ void exec(const std::string &path, const std::vector<std::string> &arguments)
 
 		for (size_t index = 0; index < size; ++index)
 			argv[index] = const_cast<char *>(arguments[index].c_str());
+		
+		dup2(streams.output(), STDOUT_FILENO);
+		dup2(streams.error(), STDERR_FILENO);
+
+		streams.close();
 
 		execvp(path.c_str(), argv);
 		perror("execvp");
@@ -33,20 +39,26 @@ void exec(const std::string &path, const std::vector<std::string> &arguments)
 
 void eval(std::string &line)
 {
-	std::vector<std::string> arguments = LineParser(line).parse();
+	auto parsed_line = parsing::LineParser(line).parse();
+
+	RedirectedStreams streams(parsed_line.redirects);
+	if (!streams.valid())
+		return;
+
+	std::vector<std::string> &arguments = parsed_line.arguments;
 	std::string program = arguments[0];
 
 	builtins::registry_map::iterator builtin = builtins::REGISTRY.find(program);
 	if (builtin != builtins::REGISTRY.end())
 	{
-		builtin->second(arguments);
+		builtin->second(arguments, streams);
 		return;
 	}
 
 	std::string path;
 	if (locate(program, path))
 	{
-		exec(path, arguments);
+		exec(path, arguments, streams);
 		return;
 	}
 

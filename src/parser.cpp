@@ -5,111 +5,174 @@
 #define SINGLE '\''
 #define DOUBLE '"'
 #define BACKSLASH '\\'
+#define GREATER_THAN '>'
 
-LineParser::LineParser(const std::string &line)
-    : iterator(std::prev(line.begin())),
-      end(line.end()),
-      builder()
+namespace parsing
 {
-    builder.reserve(line.length());
-}
-
-std::vector<std::string> LineParser::parse(void)
-{
-    std::vector<std::string> strings;
-
-    char character;
-    while ((character = next()) != END)
+    LineParser::LineParser(const std::string &line)
+        : iterator(std::prev(line.begin())),
+          end(line.end()),
+          arguments(),
+          redirects()
     {
-        switch (character)
+    }
+
+    ParsedLine LineParser::parse(void)
+    {
+        std::optional<std::string> argument;
+        while (argument = next_argument())
+            arguments.push_back(argument.value());
+
+        return ParsedLine{
+            .arguments = arguments,
+            .redirects = redirects,
+        };
+    }
+
+    std::optional<std::string> LineParser::next_argument()
+    {
+        std::string builder;
+
+        char character;
+        while ((character = next()) != END)
         {
-        case SPACE:
-        {
-            if (!builder.empty())
+            switch (character)
             {
-                strings.push_back(builder);
-                builder.clear();
+            case SPACE:
+            {
+                if (!builder.empty())
+                    return (std::optional(builder));
+
+                break;
             }
 
-            break;
-        }
-
-        case BACKSLASH:
-        {
-            backslash(false);
-
-            break;
-        }
-
-        case SINGLE:
-        {
-            while ((character = next()) != END && character != SINGLE)
-                builder.push_back(character);
-
-            break;
-        }
-
-        case DOUBLE:
-        {
-            while ((character = next()) != END && character != DOUBLE)
+            case BACKSLASH:
             {
-                if (character == BACKSLASH)
-                    backslash(true);
+                backslash(builder, false);
+
+                break;
+            }
+
+            case SINGLE:
+            {
+                while ((character = next()) != END && character != SINGLE)
+                    builder.push_back(character);
+
+                break;
+            }
+
+            case DOUBLE:
+            {
+                while ((character = next()) != END && character != DOUBLE)
+                {
+                    if (character == BACKSLASH)
+                        backslash(builder, true);
+                    else
+                        builder.push_back(character);
+                }
+
+                break;
+            }
+
+            case GREATER_THAN:
+            {
+                redirect(StandardNamedStream::OUTPUT);
+
+                break;
+            }
+
+            default:
+            {
+                if (std::isdigit(character) && peek() == GREATER_THAN)
+                {
+                    next();
+                    redirect(get_steam_name_from_fd(character));
+                }
                 else
                     builder.push_back(character);
+
+                break;
             }
-
-            break;
+            }
         }
 
-        default:
-        {
-            builder.push_back(character);
-            break;
-        }
-        }
+        if (!builder.empty())
+            return (std::optional(builder));
+
+        return (std::optional<std::string>());
     }
 
-    if (!builder.empty())
-        strings.push_back(builder);
-
-    return (strings);
-}
-
-void LineParser::backslash(bool in_quote)
-{
-    char character = next();
-    if (character == END)
-        return;
-
-    if (in_quote)
+    void LineParser::backslash(std::string &builder, bool in_quote)
     {
-        char mapped = map_backslash_character(character);
+        char character = next();
+        if (character == END)
+            return;
 
-        if (mapped != END)
-            character = mapped;
-        else
-            builder += BACKSLASH;
+        if (in_quote)
+        {
+            char mapped = map_backslash_character(character);
+
+            if (mapped != END)
+                character = mapped;
+            else
+                builder += BACKSLASH;
+        }
+
+        builder += character;
     }
 
-    builder += character;
-}
+    char LineParser::map_backslash_character(char character)
+    {
+        if (character == BACKSLASH || character == DOUBLE)
+            return (character);
 
-char LineParser::map_backslash_character(char character)
-{
-    if (character == BACKSLASH || character == DOUBLE)
-        return (character);
-
-    return (END);
-}
-
-char LineParser::next(void)
-{
-    if (iterator != end)
-        ++iterator;
-
-    if (iterator == end)
         return (END);
+    }
 
-    return (*iterator);
+    void LineParser::redirect(StandardNamedStream stream_name)
+    {
+        bool append = peek() == GREATER_THAN;
+        if (append)
+            next();
+
+        std::string path = next_argument().value();
+
+        redirects.push_back(Redirect{
+            .stream_name = stream_name,
+            .path = path,
+            .append = append});
+    }
+
+    char LineParser::next(void)
+    {
+        if (iterator != end)
+            ++iterator;
+
+        if (iterator == end)
+            return (END);
+
+        return (*iterator);
+    }
+
+    char LineParser::peek(void)
+    {
+        std::string::const_iterator next = iterator;
+        if (iterator != end)
+            next = std::next(iterator);
+
+        if (next == end)
+            return (END);
+
+        return (*next);
+    }
+
+    StandardNamedStream LineParser::get_steam_name_from_fd(char character)
+    {
+        if (character == '1')
+            return (StandardNamedStream::OUTPUT);
+        else if (character == '2')
+            return (StandardNamedStream::ERROR);
+        else
+            return (StandardNamedStream::UNKNOWN);
+    }
 }
