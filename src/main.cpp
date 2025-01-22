@@ -3,6 +3,12 @@
 #include <iostream>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <termios.h>
+
+void prompt()
+{
+	std::cout << "$ " << std::flush;
+}
 
 void exec(const std::string &path, const std::vector<std::string> &arguments, RedirectedStreams &streams)
 {
@@ -23,7 +29,7 @@ void exec(const std::string &path, const std::vector<std::string> &arguments, Re
 
 		for (size_t index = 0; index < size; ++index)
 			argv[index] = const_cast<char *>(arguments[index].c_str());
-		
+
 		dup2(streams.output(), STDOUT_FILENO);
 		dup2(streams.error(), STDERR_FILENO);
 
@@ -65,17 +71,75 @@ void eval(std::string &line)
 	std::cout << program << ": command not found" << std::endl;
 }
 
-bool read(std::string &input)
+struct termios_prompt
 {
+
+	struct termios previous;
+
+	termios_prompt()
+	{
+		tcgetattr(STDIN_FILENO, &previous);
+
+		struct termios new_ = previous;
+		new_.c_lflag &= ~(ECHO | ICANON);
+		new_.c_cc[VMIN] = 1;
+		new_.c_cc[VTIME] = 0;
+		tcsetattr(STDIN_FILENO, TCSANOW, &new_);
+	}
+
+	~termios_prompt()
+	{
+		tcsetattr(STDIN_FILENO, TCSANOW, &previous);
+	}
+};
+
+enum class ReadResult
+{
+	QUIT,
+	EMPTY,
+	CONTENT,
+};
+
+ReadResult read(std::string &line)
+{
+	line.clear();
+
+	prompt();
+
+	termios_prompt _;
+
 	while (true)
 	{
-		std::cout << "$ ";
+		char character = getchar();
 
-		if (!std::getline(std::cin, input))
-			return (false);
+		if (character == 0x4)
+		{
+			if (line.empty())
+				return (ReadResult::QUIT);
+		}
+		else if (character == '\n')
+		{
+			std::cout << std::endl;
+			return (line.empty() ? ReadResult::EMPTY : ReadResult::CONTENT);
+		}
+		else if (character == 0x1b)
+		{
+			getchar(); // '['
+			getchar(); // 'A' or 'B' or 'C' or 'D'
+		}
+		else if (character == 0x7f)
+		{
+			if (line.empty())
+				continue;
 
-		if (!input.empty())
-			return (true);
+			std::cout << "\b \b" << std::flush;
+			line.pop_back();
+		}
+		else
+		{
+			std::cout << character << std::flush;
+			line.push_back(character);
+		}
 	}
 }
 
@@ -87,6 +151,16 @@ int main()
 	builtins::register_defaults();
 
 	std::string input;
-	while (read(input))
-		eval(input);
+	while (true)
+	{
+		switch (read(input))
+		{
+		case ReadResult::QUIT:
+			return (0);
+		case ReadResult::EMPTY:
+			continue;
+		case ReadResult::CONTENT:
+			eval(input);
+		}
+	}
 }
