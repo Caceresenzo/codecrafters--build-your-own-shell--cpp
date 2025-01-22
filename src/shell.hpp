@@ -8,6 +8,8 @@
 #include <optional>
 #include <unistd.h>
 
+void prompt();
+
 std::vector<std::string> split(std::string haystack, const std::string &needle);
 bool locate(const std::string &program, std::string &output);
 
@@ -94,6 +96,18 @@ namespace parsing
         char peek(void);
         StandardNamedStream get_steam_name_from_fd(char character);
     };
+}
+
+namespace autocompletion
+{
+    enum class Result
+    {
+        NONE,
+        FOUND,
+        MORE,
+    };
+
+    Result complete(std::string &line);
 }
 
 #endif
