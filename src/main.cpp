@@ -10,6 +10,11 @@ void prompt()
 	std::cout << "$ " << std::flush;
 }
 
+void bell()
+{
+	std::cout << '\a' << std::flush;
+}
+
 void exec(const std::string &path, const std::vector<std::string> &arguments, RedirectedStreams &streams)
 {
 	pid_t pid = fork();
@@ -126,8 +131,18 @@ ReadResult read(std::string &line)
 		{
 			autocompletion::Result result = autocompletion::complete(line);
 
-			if (result == autocompletion::Result::FOUND)
-				continue;
+			switch (result)
+			{
+			case autocompletion::Result::NONE:
+				bell();
+				break;
+
+			case autocompletion::Result::FOUND:
+				break;
+			
+			default:
+				break;
+			}
 		}
 		else if (character == 0x1b)
 		{
