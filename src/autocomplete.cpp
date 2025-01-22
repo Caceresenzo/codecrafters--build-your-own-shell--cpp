@@ -15,7 +15,10 @@ struct string_comparator
 static void commit(std::string &line, const std::string &candidate)
 {
     line += candidate;
-    std::cout << candidate << ' ' << std::flush;
+    std::cout << candidate << std::flush;
+
+    line += ' ';
+    std::cout << ' ' << std::flush;
 }
 
 namespace autocompletion
