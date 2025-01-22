@@ -70,7 +70,7 @@ namespace autocompletion
         }
     }
 
-    Result complete(std::string &line)
+    Result complete(std::string &line, bool bell_rang)
     {
         std::set<std::string, string_comparator> candidates;
 
@@ -84,7 +84,29 @@ namespace autocompletion
             commit(line, *candidates.begin());
             return (Result::FOUND);
         }
+        else
+        {
+            if (bell_rang)
+            {
+                std::cout << std::endl;
 
-        return (Result::NONE);
+                size_t index = 0;
+                for (const auto &candidate : candidates)
+                {
+                    if (index++ != 0)
+                        std::cout << "  ";
+
+                    std::cout << line;
+                    std::cout << candidate;
+                }
+
+                std::cout << std::endl;
+
+                prompt();
+                std::cout << line << std::flush;
+            }
+
+            return (Result::MORE);
+        }
     }
 }

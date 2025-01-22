@@ -113,6 +113,7 @@ ReadResult read(std::string &line)
 
 	termios_prompt _;
 
+	bool bell_rang = false;
 	while (true)
 	{
 		char character = getchar();
@@ -129,18 +130,22 @@ ReadResult read(std::string &line)
 		}
 		else if (character == '\t')
 		{
-			autocompletion::Result result = autocompletion::complete(line);
+			autocompletion::Result result = autocompletion::complete(line, bell_rang);
 
 			switch (result)
 			{
 			case autocompletion::Result::NONE:
 				bell();
+				bell_rang = false;
 				break;
 
 			case autocompletion::Result::FOUND:
+				bell_rang = false;
 				break;
 
-			default:
+			case autocompletion::Result::MORE:
+				bell();
+				bell_rang = true;
 				break;
 			}
 		}

@@ -107,7 +107,7 @@ namespace autocompletion
         MORE,
     };
 
-    Result complete(std::string &line);
+    Result complete(std::string &line, bool bell_rang);
 }
 
 #endif
