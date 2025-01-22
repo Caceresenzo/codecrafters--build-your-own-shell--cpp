@@ -122,6 +122,13 @@ ReadResult read(std::string &line)
 			std::cout << std::endl;
 			return (line.empty() ? ReadResult::EMPTY : ReadResult::CONTENT);
 		}
+		else if (character == '\t')
+		{
+			autocompletion::Result result = autocompletion::complete(line);
+
+			if (result == autocompletion::Result::FOUND)
+				continue;
+		}
 		else if (character == 0x1b)
 		{
 			getchar(); // '['
