@@ -6,9 +6,8 @@
 #include <map>
 #include <functional>
 #include <optional>
+#include <list>
 #include <unistd.h>
-
-void prompt();
 
 std::vector<std::string> split(std::string haystack, const std::string &needle);
 bool locate(const std::string &program, std::string &output);
@@ -78,6 +77,7 @@ namespace parsing
     private:
         std::string::const_iterator iterator;
         std::string::const_iterator end;
+        std::list<parsing::ParsedLine> commands;
         std::vector<std::string> arguments;
         std::vector<Redirect> redirects;
 
@@ -85,13 +85,14 @@ namespace parsing
         LineParser(const std::string &line);
 
     public:
-        ParsedLine parse(void);
+        std::list<parsing::ParsedLine> parse(void);
 
     private:
         std::optional<std::string> next_argument();
         void backslash(std::string &builder, bool in_quote);
         char map_backslash_character(char character);
         void redirect(StandardNamedStream stream_name);
+        void pipe(void);
         char next(void);
         char peek(void);
         StandardNamedStream get_steam_name_from_fd(char character);
@@ -109,5 +110,8 @@ namespace autocompletion
 
     Result complete(std::string &line, bool bell_rang);
 }
+
+void prompt();
+pid_t pipeline(const std::list<parsing::ParsedLine> &commands);
 
 #endif
