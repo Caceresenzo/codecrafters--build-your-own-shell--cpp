@@ -15,17 +15,36 @@ void bell()
 	std::cout << '\a' << std::flush;
 }
 
-void exec(const std::string &path, const std::vector<std::string> &arguments, RedirectedStreams &streams)
+void exec(const parsing::ParsedLine &parsed_line)
 {
-	pid_t pid = fork();
+	RedirectedStreams streams(parsed_line.redirects);
+	if (!streams.valid())
+		return;
 
+	const std::vector<std::string> &arguments = parsed_line.arguments;
+	std::string program = arguments[0];
+
+	builtins::registry_map::iterator builtin = builtins::REGISTRY.find(program);
+	if (builtin != builtins::REGISTRY.end())
+	{
+		builtin->second(arguments, streams);
+		return;
+	}
+
+	std::string path;
+	if (!locate(program, path))
+	{
+		std::cout << program << ": command not found" << std::endl;
+		return;
+	}
+
+	pid_t pid = fork();
 	if (pid == -1)
 	{
 		perror("fork");
 		return;
 	}
-
-	if (pid == 0)
+	else if (pid == 0)
 	{
 		size_t size = arguments.size();
 
@@ -50,35 +69,16 @@ void exec(const std::string &path, const std::vector<std::string> &arguments, Re
 
 void eval(std::string &line)
 {
-	auto parsed_line = parsing::LineParser(line).parse();
+	auto commands = parsing::LineParser(line).parse();
 
-	RedirectedStreams streams(parsed_line.redirects);
-	if (!streams.valid())
-		return;
-
-	std::vector<std::string> &arguments = parsed_line.arguments;
-	std::string program = arguments[0];
-
-	builtins::registry_map::iterator builtin = builtins::REGISTRY.find(program);
-	if (builtin != builtins::REGISTRY.end())
-	{
-		builtin->second(arguments, streams);
-		return;
-	}
-
-	std::string path;
-	if (locate(program, path))
-	{
-		exec(path, arguments, streams);
-		return;
-	}
-
-	std::cout << program << ": command not found" << std::endl;
+	if (commands.size() == 1)
+		exec(commands.front());
+	else
+		pipeline(commands);
 }
 
 struct termios_prompt
 {
-
 	struct termios previous;
 
 	termios_prompt()

@@ -6,27 +6,29 @@
 #define DOUBLE '"'
 #define BACKSLASH '\\'
 #define GREATER_THAN '>'
+#define PIPE '|'
 
 namespace parsing
 {
     LineParser::LineParser(const std::string &line)
         : iterator(std::prev(line.begin())),
           end(line.end()),
+          commands(),
           arguments(),
           redirects()
     {
     }
 
-    ParsedLine LineParser::parse(void)
+    std::list<parsing::ParsedLine> LineParser::parse(void)
     {
         std::optional<std::string> argument;
         while (argument = next_argument())
             arguments.push_back(argument.value());
 
-        return ParsedLine{
-            .arguments = arguments,
-            .redirects = redirects,
-        };
+        if (!arguments.empty())
+            pipe();
+
+        return (commands);
     }
 
     std::optional<std::string> LineParser::next_argument()
@@ -77,6 +79,13 @@ namespace parsing
             case GREATER_THAN:
             {
                 redirect(StandardNamedStream::OUTPUT);
+
+                break;
+            }
+
+            case PIPE:
+            {
+                pipe();
 
                 break;
             }
@@ -141,6 +150,16 @@ namespace parsing
             .stream_name = stream_name,
             .path = path,
             .append = append});
+    }
+
+    void LineParser::pipe(void)
+    {
+        commands.push_back(ParsedLine{
+            .arguments = arguments,
+            .redirects = redirects});
+
+        arguments.clear();
+        redirects.clear();
     }
 
     char LineParser::next(void)
