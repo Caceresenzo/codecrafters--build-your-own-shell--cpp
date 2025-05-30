@@ -69,6 +69,8 @@ void exec(const parsing::ParsedLine &parsed_line)
 
 void eval(std::string &line)
 {
+	history::add(line);
+
 	auto commands = parsing::LineParser(line).parse();
 
 	if (commands.size() == 1)

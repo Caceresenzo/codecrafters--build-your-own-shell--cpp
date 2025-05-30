@@ -114,4 +114,10 @@ namespace autocompletion
 void prompt();
 pid_t pipeline(const std::list<parsing::ParsedLine> &commands);
 
+namespace history
+{
+    void add(const std::string &command);
+    const std::vector<std::string> &get();
+}
+
 #endif

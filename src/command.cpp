@@ -191,6 +191,11 @@ namespace builtins
 
 	void history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
+		for (size_t index = 0; index < history::get().size(); ++index)
+		{
+			const std::string &line = history::get()[index];
+			dprintf(streams.output(), "%5zu %s\n", index + 1, line.c_str());
+		}
 	}
 
 	void register_defaults()
