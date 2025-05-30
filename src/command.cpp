@@ -189,6 +189,10 @@ namespace builtins
 			dprintf(streams.output(), "cd: %s: %s\n", path.c_str(), strerror(errno));
 	}
 
+	void history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	{
+	}
+
 	void register_defaults()
 	{
 		REGISTRY.insert(std::make_pair("exit", exit));
@@ -196,5 +200,6 @@ namespace builtins
 		REGISTRY.insert(std::make_pair("type", type));
 		REGISTRY.insert(std::make_pair("pwd", pwd));
 		REGISTRY.insert(std::make_pair("cd", cd));
+		REGISTRY.insert(std::make_pair("history", history));
 	}
 }
