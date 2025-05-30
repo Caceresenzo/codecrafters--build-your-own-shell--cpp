@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <termios.h>
 
+#define UP 'A'
+
 void prompt()
 {
 	std::cout << "$ " << std::flush;
@@ -13,6 +15,20 @@ void prompt()
 void bell()
 {
 	std::cout << '\a' << std::flush;
+}
+
+void change_line(std::string &line, const std::string &new_line)
+{
+	size_t length = line.length();
+
+	std::string backspaces(length, '\b');
+	std::string spaces(length, ' ');
+
+	std::cout << backspaces << spaces << backspaces << std::flush;
+
+	std::cout << new_line << std::flush;
+
+	line = new_line;
 }
 
 void exec(const parsing::ParsedLine &parsed_line)
@@ -115,6 +131,9 @@ ReadResult read(std::string &line)
 
 	termios_prompt _;
 
+	size_t history_length = history::get().size();
+	size_t history_position = history_length;
+
 	bool bell_rang = false;
 	while (true)
 	{
@@ -154,7 +173,13 @@ ReadResult read(std::string &line)
 		else if (character == 0x1b)
 		{
 			getchar(); // '['
-			getchar(); // 'A' or 'B' or 'C' or 'D'
+
+			char direction = getchar();
+			if (direction == UP && history_position != 0)
+			{
+				history_position--;
+				change_line(line, history::get()[history_position]);
+			}
 		}
 		else if (character == 0x7f)
 		{
