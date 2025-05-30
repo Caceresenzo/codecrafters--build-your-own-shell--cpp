@@ -1,6 +1,7 @@
 #include "shell.hpp"
 
 #include <iostream>
+#include <sstream>
 #include <unistd.h>
 #include <cstring>
 #include <climits>
@@ -191,7 +192,24 @@ namespace builtins
 
 	void history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
-		for (size_t index = 0; index < history::get().size(); ++index)
+		size_t size = history::get().size();
+
+		size_t start = 0;
+		if (arguments.size() > 1)
+		{
+			std::stringstream stream(arguments[1]);
+			stream >> start;
+
+			if (stream.fail())
+			{
+				dprintf(streams.error(), "history: invalid argument '%s'\n", arguments[1].c_str());
+				return;
+			}
+
+			start = size - start;
+		}
+
+		for (size_t index = start; index < size; ++index)
 		{
 			const std::string &line = history::get()[index];
 			dprintf(streams.output(), "%5zu %s\n", index + 1, line.c_str());
