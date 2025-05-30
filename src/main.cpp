@@ -6,6 +6,7 @@
 #include <termios.h>
 
 #define UP 'A'
+#define DOWN 'B'
 
 void prompt()
 {
@@ -179,6 +180,15 @@ ReadResult read(std::string &line)
 			{
 				history_position--;
 				change_line(line, history::get()[history_position]);
+			}
+			else if (direction == DOWN && history_position < history_length)
+			{
+				history_position++;
+
+				if (history_position == history_length)
+					change_line(line, "");
+				else
+					change_line(line, history::get()[history_position]);
 			}
 		}
 		else if (character == 0x7f)
