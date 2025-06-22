@@ -24,6 +24,13 @@ namespace history
             read(histfile.value());
     }
 
+    void finalize()
+    {
+        auto histfile = get_file();
+        if (histfile.has_value())
+            write(histfile.value());
+    }
+
     void add(const std::string &command)
     {
         lines.push_back(command);
