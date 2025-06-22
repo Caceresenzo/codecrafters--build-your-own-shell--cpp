@@ -206,7 +206,9 @@ namespace builtins
 
 		if (first == "-r")
 			history::read(arguments[2]);
-		else if (first.length())
+		else if (first == "-w")
+			history::write(arguments[2]);
+		else if (!first.empty())
 		{
 			std::stringstream stream(arguments[1]);
 			
