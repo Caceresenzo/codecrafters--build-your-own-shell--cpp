@@ -110,12 +110,12 @@ namespace builtins
 {
 	registry_map REGISTRY;
 
-	void exit(const std::vector<std::string> &_, const RedirectedStreams &__)
+	std::optional<int> exit(const std::vector<std::string> &_, const RedirectedStreams &__)
 	{
-		std::exit(0);
+		return (std::optional<int>(EXIT_SUCCESS));
 	}
 
-	void echo(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	std::optional<int> echo(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		size_t size = arguments.size();
 		size_t last_index = size - 1;
@@ -129,9 +129,11 @@ namespace builtins
 		}
 
 		dprintf(streams.output(), "\n");
+
+		return (std::nullopt);
 	}
 
-	void type(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	std::optional<int> type(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		std::string program = arguments[1];
 
@@ -139,28 +141,32 @@ namespace builtins
 		if (builtin != builtins::REGISTRY.end())
 		{
 			dprintf(streams.output(), "%s is a shell builtin\n", program.c_str());
-			return;
+			return (std::nullopt);
 		}
 
 		std::string path;
 		if (locate(program, path))
 		{
 			dprintf(streams.output(), "%s is %s\n", program.c_str(), path.c_str());
-			return;
+			return (std::nullopt);
 		}
 
 		dprintf(streams.error(), "%s: not found\n", program.c_str());
+
+		return (std::nullopt);
 	}
 
-	void pwd(const std::vector<std::string> &_, const RedirectedStreams &streams)
+	std::optional<int> pwd(const std::vector<std::string> &_, const RedirectedStreams &streams)
 	{
 		char path[PATH_MAX] = {};
 		getcwd(path, sizeof(path));
 
 		dprintf(streams.output(), "%s\n", path);
+
+		return (std::nullopt);
 	}
 
-	void cd(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	std::optional<int> cd(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		std::string absolute_path;
 
@@ -184,10 +190,12 @@ namespace builtins
 		}
 
 		if (absolute_path.empty())
-			return;
+			return (std::nullopt);
 
 		if (chdir(absolute_path.c_str()) == -1)
 			dprintf(streams.output(), "cd: %s: %s\n", path.c_str(), strerror(errno));
+
+		return (std::nullopt);
 	}
 
 	static void _print_history(size_t start, const RedirectedStreams &streams)
@@ -200,7 +208,7 @@ namespace builtins
 		}
 	}
 
-	void history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	std::optional<int> history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
 	{
 		const std::string &first = arguments.size() > 1 ? arguments[1] : "";
 
@@ -213,14 +221,14 @@ namespace builtins
 		else if (!first.empty())
 		{
 			std::stringstream stream(arguments[1]);
-			
+
 			size_t start;
 			stream >> start;
 
 			if (stream.fail())
 			{
 				dprintf(streams.error(), "history: invalid argument '%s'\n", arguments[1].c_str());
-				return;
+				return (std::nullopt);
 			}
 
 			start = history::get().size() - start;
@@ -228,6 +236,8 @@ namespace builtins
 		}
 		else
 			_print_history(0, streams);
+
+		return (std::nullopt);
 	}
 
 	void register_defaults()

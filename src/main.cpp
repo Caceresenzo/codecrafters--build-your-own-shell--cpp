@@ -32,34 +32,31 @@ void change_line(std::string &line, const std::string &new_line)
 	line = new_line;
 }
 
-void exec(const parsing::ParsedLine &parsed_line)
+std::optional<int> exec(const parsing::ParsedLine &parsed_line)
 {
 	RedirectedStreams streams(parsed_line.redirects);
 	if (!streams.valid())
-		return;
+		return (std::nullopt);
 
 	const std::vector<std::string> &arguments = parsed_line.arguments;
 	std::string program = arguments[0];
 
 	builtins::registry_map::iterator builtin = builtins::REGISTRY.find(program);
 	if (builtin != builtins::REGISTRY.end())
-	{
-		builtin->second(arguments, streams);
-		return;
-	}
+		return (builtin->second(arguments, streams));
 
 	std::string path;
 	if (!locate(program, path))
 	{
 		std::cout << program << ": command not found" << std::endl;
-		return;
+		return (std::nullopt);
 	}
 
 	pid_t pid = fork();
 	if (pid == -1)
 	{
 		perror("fork");
-		return;
+		return (std::nullopt);
 	}
 	else if (pid == 0)
 	{
@@ -82,18 +79,22 @@ void exec(const parsing::ParsedLine &parsed_line)
 	}
 	else
 		waitpid(pid, NULL, 0);
+
+	return (std::nullopt);
 }
 
-void eval(std::string &line)
+std::optional<int> eval(std::string &line)
 {
 	history::add(line);
 
 	auto commands = parsing::LineParser(line).parse();
 
 	if (commands.size() == 1)
-		exec(commands.front());
+		return (exec(commands.front()));
 	else
 		pipeline(commands);
+
+	return (std::nullopt);
 }
 
 struct termios_prompt
@@ -207,14 +208,8 @@ ReadResult read(std::string &line)
 	}
 }
 
-int main()
+int loop()
 {
-	std::cout << std::unitbuf;
-	std::cerr << std::unitbuf;
-
-	history::initialize();
-	builtins::register_defaults();
-
 	std::string input;
 	while (true)
 	{
@@ -225,7 +220,24 @@ int main()
 		case ReadResult::EMPTY:
 			continue;
 		case ReadResult::CONTENT:
-			eval(input);
+			auto shell_exit_code = eval(input);
+			if (shell_exit_code.has_value())
+				return (shell_exit_code.value());
 		}
 	}
+}
+
+int main()
+{
+	std::cout << std::unitbuf;
+	std::cerr << std::unitbuf;
+
+	history::initialize();
+	builtins::register_defaults();
+
+	int exit_code = loop();
+
+	history::finalize();
+
+	return (exit_code);
 }

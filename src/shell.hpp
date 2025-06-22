@@ -58,7 +58,7 @@ public:
 
 namespace builtins
 {
-    using registry_map = std::map<std::string, std::function<void(const std::vector<std::string> &, const RedirectedStreams &)>>;
+    using registry_map = std::map<std::string, std::function<std::optional<int>(const std::vector<std::string> &, const RedirectedStreams &)>>;
     extern registry_map REGISTRY;
 
     void register_defaults();
@@ -117,6 +117,7 @@ pid_t pipeline(const std::list<parsing::ParsedLine> &commands);
 namespace history
 {
     void initialize(void);
+    void finalize(void);
     void add(const std::string &command);
     const std::vector<std::string> &get();
     void read(const std::string &path);
