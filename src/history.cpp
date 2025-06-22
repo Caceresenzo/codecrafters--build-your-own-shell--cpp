@@ -2,10 +2,27 @@
 
 #include <fstream>
 
+#define HISTFILE_ENVVAR "HISTFILE"
+
 namespace history
 {
     std::vector<std::string> lines;
     size_t last_append_index = 0;
+
+    std::optional<std::string> get_file(void) {
+        const char *path = std::getenv(HISTFILE_ENVVAR);
+        if (path == nullptr || path[0] == '\0')
+            return (std::nullopt);
+
+        return (std::string(path));
+    }
+
+    void initialize()
+    {
+        auto histfile = get_file();
+        if (histfile.has_value())
+            read(histfile.value());
+    }
 
     void add(const std::string &command)
     {

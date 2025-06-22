@@ -116,6 +116,7 @@ pid_t pipeline(const std::list<parsing::ParsedLine> &commands);
 
 namespace history
 {
+    void initialize(void);
     void add(const std::string &command);
     const std::vector<std::string> &get();
     void read(const std::string &path);
