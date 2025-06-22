@@ -190,14 +190,27 @@ namespace builtins
 			dprintf(streams.output(), "cd: %s: %s\n", path.c_str(), strerror(errno));
 	}
 
-	void history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	static void _print_history(size_t start, const RedirectedStreams &streams)
 	{
 		size_t size = history::get().size();
+		for (size_t index = start; index < size; ++index)
+		{
+			const std::string &line = history::get()[index];
+			dprintf(streams.output(), "%5zu %s\n", index + 1, line.c_str());
+		}
+	}
 
-		size_t start = 0;
-		if (arguments.size() > 1)
+	void history(const std::vector<std::string> &arguments, const RedirectedStreams &streams)
+	{
+		const std::string &first = arguments.size() > 1 ? arguments[1] : "";
+
+		if (first == "-r")
+			history::read(arguments[2]);
+		else if (first.length())
 		{
 			std::stringstream stream(arguments[1]);
+			
+			size_t start;
 			stream >> start;
 
 			if (stream.fail())
@@ -206,14 +219,11 @@ namespace builtins
 				return;
 			}
 
-			start = size - start;
+			start = history::get().size() - start;
+			_print_history(start, streams);
 		}
-
-		for (size_t index = start; index < size; ++index)
-		{
-			const std::string &line = history::get()[index];
-			dprintf(streams.output(), "%5zu %s\n", index + 1, line.c_str());
-		}
+		else
+			_print_history(0, streams);
 	}
 
 	void register_defaults()

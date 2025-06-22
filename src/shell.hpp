@@ -118,6 +118,7 @@ namespace history
 {
     void add(const std::string &command);
     const std::vector<std::string> &get();
+    void read(const std::string &path);
 }
 
 #endif
