@@ -208,6 +208,8 @@ namespace builtins
 			history::read(arguments[2]);
 		else if (first == "-w")
 			history::write(arguments[2]);
+		else if (first == "-a")
+			history::append(arguments[2]);
 		else if (!first.empty())
 		{
 			std::stringstream stream(arguments[1]);
