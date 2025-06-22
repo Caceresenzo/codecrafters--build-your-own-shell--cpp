@@ -212,6 +212,7 @@ int main()
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 
+	history::initialize();
 	builtins::register_defaults();
 
 	std::string input;
