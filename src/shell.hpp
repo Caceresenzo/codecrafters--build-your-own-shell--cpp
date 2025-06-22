@@ -120,6 +120,7 @@ namespace history
     const std::vector<std::string> &get();
     void read(const std::string &path);
     void write(const std::string &path);
+    void append(const std::string &path);
 }
 
 #endif
